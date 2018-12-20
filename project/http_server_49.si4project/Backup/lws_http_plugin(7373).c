@@ -24,7 +24,7 @@ int lws_register_handler(lws_http_conn_t *c, int ev, void *p)
 		}
 
 		sprintf(data, "%s",
-				  "<html><body><form method =\"POST\" action=\"http://192.168.1.141:8000/default\">"
+				  "<html><body><form method =\"POST\" action=\"http://192.168.1.141:8000/\">"
 				  "<table border=\"5\" align=\"ceter\">"
 				  "<tr><td colspan=\"2\" align=\"center\" height=\"40\">LOG IN </td></tr>"
 					"<tr><td align=\"right\">USER:</td>"
@@ -34,13 +34,10 @@ int lws_register_handler(lws_http_conn_t *c, int ev, void *p)
 					"</table>"
 					"<input type=\"submit\" name=\"button\" id=\"button\" value=\"submit\"/></br> </body></html>");
 
-		lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
-	}
-	else {
+		lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
+	} else {
 		return HTTP_BAD_REQUEST;
 	}
-	
-	return HTTP_OK;
 }
 
 int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
@@ -54,12 +51,11 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
         if (c->send == NULL) {
             return HTTP_INTERNAL_SERVER_ERROR;
         }
-		
-	/*veidict if have the right username and password*/
 	sprintf(user,"%.*s",hm->user.len, hm->user.p);
 	sprintf(password,"%.*s",hm->password.len, hm->password.p);
 	lws_log(4,"user：%s\n",user);
 	lws_log(4,"password：%s\n",password);
+
 	if((strcmp(user,"123456") && strcmp(password,"123456")) != 0)
 		return HTTP_UNAUTHORIZED;
 
@@ -67,7 +63,7 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
                   "<html><body><h>Enjoy your webserver!</h>"
                   "<hr style=\"width:160px;color:#00ffff;position:absolute;left:10px;\"><br/><br/>"
                   "<ul style=\"list-style-type:circle\">"
-                  "<li><a href=\"/default\"> echo root diretory </a></li>"
+                  "<li><a href=\"/\"> echo root diretory </a></li>"
                   "<li><a href=\"/hello\"> echo hello message </a></li>"
                   "<li><a href=\"/version\"> echo lws version </a></li>"
                   "<li><a href=\"/download\"> downlad file </a></li>"
@@ -287,7 +283,7 @@ int lws_download_handler(lws_http_conn_t *c, int ev, void *p)
         rlen += sprintf(data + rlen, "<h1>Index of %s</h1>", path);
 		rlen += sprintf(data + rlen, 
 				 					"<ul style=\"list-style-type:circle\">"
-                    				"<li><a href=\"/default\"> echo root diretory </a></li>");
+                    				"<li><a href=\"/\"> echo root diretory </a></li>");
         dp = opendir(path);
         while ((dir = readdir(dp)) != NULL) {
             if (strcmp(dir->d_name, ".") == 0 || strcmp(dir->d_name, "..") == 0)
