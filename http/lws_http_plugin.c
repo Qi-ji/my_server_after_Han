@@ -14,6 +14,7 @@
 
 #define REGISTED 1
 #define UNREGISTED 0
+int g_code_flag = UNREGISTED;
 
 
 static int lws_check_register(void *p, char *data)
@@ -21,25 +22,25 @@ static int lws_check_register(void *p, char *data)
 	struct http_message *hm = p;
     char user[20] = {0};
 	char password[20] = {0};
-	int flag = UNREGISTED;
 
+		
 	sprintf(user,"%.*s",hm->user.len, hm->user.p);
 	sprintf(password,"%.*s",hm->password.len, hm->password.p);
 	lws_log(4,"user：%s\n",user);
 	lws_log(4,"password：%s\n",password);
 	
-	if((strcmp(user,"123456") && strcmp(password,"123456")) != 0) {
+	if((strcmp(user,"123456") && strcmp(password,"123456")) != 0 && g_code_flag == UNREGISTED) {
 
-		flag = UNREGISTED;
+		g_code_flag = UNREGISTED;
 		sprintf(data,
 		"<html><body>"
 		"<a href=\"/\"> echo check here for login </a>"
 		"</body></html>");
 	}
 	else {
-		flag = REGISTED;
+		g_code_flag = REGISTED;
 	}
-	return flag;
+	return 0;
 }
 
 int lws_register_handler(lws_http_conn_t *c, int ev, void *p)
@@ -75,9 +76,8 @@ int lws_register_handler(lws_http_conn_t *c, int ev, void *p)
 int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
 {
     struct http_message *hm = p;
-	char data[1024] = {0};
-	int code_flag = UNREGISTED;					
-	char data_for_register[1024] = {0};
+	char data_getregister[1024] = {0};			
+	char data_noregister[1024] = {0};
 
     if (hm && ev == LWS_EV_HTTP_REQUEST) {
         if (c->send == NULL) {
@@ -85,8 +85,8 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
         }
 		
 	/*veidict if have the right username and password*/
-		code_flag = lws_check_register(hm, data_for_register);
-		sprintf(data, "%s",
+		lws_check_register(hm, data_noregister);
+		sprintf(data_getregister, "%s",
 						"<html><body><h>Enjoy your webserver!</h>"
 						"<hr style=\"width:160px;color:#00ffff;position:absolute;left:10px;\"><br/><br/>"
 						"<ul style=\"list-style-type:circle\">"
@@ -96,11 +96,11 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
 						"<li><a href=\"/download\"> downlad file </a></li>"
 						"</ul>"
 						"</body></html>");
-		if(code_flag){
-			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
+		if(g_code_flag){
+			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_getregister, strlen(data_getregister));
 			}
 		else{
-			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_for_register, strlen(data));
+			lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
 		}
     } 
 	else {
@@ -147,18 +147,25 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
 int lws_hello_handler(lws_http_conn_t *c, int ev, void *p)
 {
     struct http_message *hm = p;
-    char data[1024] = {0};
+ 	char data_getregister[1024] = {0};			
+	char data_noregister[1024] = {0};
 
     if (hm && ev == LWS_EV_HTTP_REQUEST) {
         if (c->send == NULL) {
             return HTTP_INTERNAL_SERVER_ERROR;
         }
-
-        sprintf(data, "%s",
+		
+		lws_check_register(hm, data_noregister);
+        sprintf(data_getregister, "%s",
                   "<html><body><h>Hello LWS!</h><br/><br/>"
                   "</body></html>");
 
-        lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
+        if(g_code_flag){
+			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_getregister, strlen(data_getregister));
+			}
+		else{
+			lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
+		}
     } else {
         return HTTP_BAD_REQUEST;
     }
@@ -169,17 +176,24 @@ int lws_hello_handler(lws_http_conn_t *c, int ev, void *p)
 int lws_version_handler(lws_http_conn_t *c, int ev, void *p)
 {
     struct http_message *hm = p;
-    char data[1024] = {0};
+	char data_getregister[1024] = {0};			
+	char data_noregister[1024] = {0};
+
 
     if (hm && ev == LWS_EV_HTTP_REQUEST) {
         if (c->send == NULL) {
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        sprintf(data, "<html><body><h>LWS - version[%s]</h><br/><br/>"
+        sprintf(data_getregister, "<html><body><h>LWS - version[%s]</h><br/><br/>"
                   "</body></html>", LWS_HTTP_VERSION);
 
-        lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
+        if(g_code_flag){
+			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_getregister, strlen(data_getregister));
+			}
+		else{
+			lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
+		}
     } else {
         return HTTP_BAD_REQUEST;
     }

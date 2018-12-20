@@ -18,6 +18,11 @@
 #include "lws_http.h"
 #include "lws_http_plugin.h"
 
+#define AUTHORITATIVE_TIME 3
+#define REGISTED 1
+#define UNREGISTED 0
+extern int g_code_flag;
+
 /**
  * @func    lws_set_socket_reuse
  * @brief   set socket reuse attribution
@@ -175,7 +180,8 @@ int lws_socket_recv_handler(int sockfd)
 	char pread_buf[4096];
 	struct timeval select_timeout;
 	int ret;
-
+	int authoritative_time = 0;
+	
 	if (sockfd < 0) {
 		lws_log(2, "arg error\n");
 		return -1;
@@ -208,9 +214,15 @@ int lws_socket_recv_handler(int sockfd)
 			break;
 		} else if (ret == 0) {
 			lws_log(4, "sockfd[%d] select timeout\n", sockfd);
+			authoritative_time ++;
 			continue;
 		}
 
+		if(authoritative_time == AUTHORITATIVE_TIME){
+			authoritative_time = 0;
+			g_code_flag = UNREGISTED;
+		}
+		
 		if (FD_ISSET(sockfd, &rset)) {
 			memset(pread_buf, 0, 4096);
 			nread = recv(sockfd, pread_buf, 4096, 0);

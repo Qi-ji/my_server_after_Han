@@ -1,6 +1,11 @@
 #ifndef _LWS_SOCKET_H_
 #define _LWS_SOCKET_H_
 
+#define REGISTED 1
+#define UNREGISTED 0
+int g_code_flag;
+
+
 /**
  * @func    lws_set_socket_reuse
  * @brief   set socket reuse attribution
