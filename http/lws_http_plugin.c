@@ -12,11 +12,40 @@
 #include "lws_http_plugin.h"
 #include "lws_util.h"
 
+#define REGISTED 1
+#define UNREGISTED 0
+
+
+static int lws_check_register(void *p, char *data)
+{
+	struct http_message *hm = p;
+    char user[20] = {0};
+	char password[20] = {0};
+	int flag = UNREGISTED;
+
+	sprintf(user,"%.*s",hm->user.len, hm->user.p);
+	sprintf(password,"%.*s",hm->password.len, hm->password.p);
+	lws_log(4,"user：%s\n",user);
+	lws_log(4,"password：%s\n",password);
+	
+	if((strcmp(user,"123456") && strcmp(password,"123456")) != 0) {
+
+		flag = UNREGISTED;
+		sprintf(data,
+		"<html><body>"
+		"<a href=\"/\"> echo check here for login </a>"
+		"</body></html>");
+	}
+	else {
+		flag = REGISTED;
+	}
+	return flag;
+}
+
 int lws_register_handler(lws_http_conn_t *c, int ev, void *p)
 {
 	struct http_message *hm = p;
 	char data[1024] = {0};
-
 
 	if (hm && ev == LWS_EV_HTTP_REQUEST) {
 		if (c->send == NULL) {
@@ -46,9 +75,9 @@ int lws_register_handler(lws_http_conn_t *c, int ev, void *p)
 int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
 {
     struct http_message *hm = p;
-    char data[1024] = {0};
-    char user[20] = {0};
-	char password[20] = {0};
+	char data[1024] = {0};
+	int code_flag = UNREGISTED;					
+	char data_for_register[1024] = {0};
 
     if (hm && ev == LWS_EV_HTTP_REQUEST) {
         if (c->send == NULL) {
@@ -56,25 +85,23 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
         }
 		
 	/*veidict if have the right username and password*/
-	sprintf(user,"%.*s",hm->user.len, hm->user.p);
-	sprintf(password,"%.*s",hm->password.len, hm->password.p);
-	lws_log(4,"user：%s\n",user);
-	lws_log(4,"password：%s\n",password);
-	if((strcmp(user,"123456") && strcmp(password,"123456")) != 0)
-		return HTTP_UNAUTHORIZED;
-
-        sprintf(data, "%s",
-                  "<html><body><h>Enjoy your webserver!</h>"
-                  "<hr style=\"width:160px;color:#00ffff;position:absolute;left:10px;\"><br/><br/>"
-                  "<ul style=\"list-style-type:circle\">"
-                  "<li><a href=\"/default\"> echo root diretory </a></li>"
-                  "<li><a href=\"/hello\"> echo hello message </a></li>"
-                  "<li><a href=\"/version\"> echo lws version </a></li>"
-                  "<li><a href=\"/download\"> downlad file </a></li>"
-                  "</ul>"
-                  "</body></html>");
-
-        lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
+		code_flag = lws_check_register(hm, data_for_register);
+		sprintf(data, "%s",
+						"<html><body><h>Enjoy your webserver!</h>"
+						"<hr style=\"width:160px;color:#00ffff;position:absolute;left:10px;\"><br/><br/>"
+						"<ul style=\"list-style-type:circle\">"
+						"<li><a href=\"/default\"> echo root diretory </a></li>"
+						"<li><a href=\"/hello\"> echo hello message </a></li>"
+						"<li><a href=\"/version\"> echo lws version </a></li>"
+						"<li><a href=\"/download\"> downlad file </a></li>"
+						"</ul>"
+						"</body></html>");
+		if(code_flag){
+			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
+			}
+		else{
+			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_for_register, strlen(data));
+		}
     } 
 	else {
         return HTTP_BAD_REQUEST;
