@@ -46,19 +46,25 @@ static int lws_check_register(void *p, char *data)
 int lws_register_handler(lws_http_conn_t *c, int ev, void *p)
 {
 	struct http_message *hm = p;
-	char extra_header[1024] = {0};
+	char data[1024] = {0};
 
 	if (hm && ev == LWS_EV_HTTP_REQUEST) {
 		if (c->send == NULL) {
 			return HTTP_INTERNAL_SERVER_ERROR;
 		}
-		
 
-			//sprintf(extra_header, "%s",
-			//	"WWW-Authenticate:Basic realm=\"your name and password\"");		
-		//lws_http_respond_base(c, 401, LWS_HTTP_HTML_TYPE, extra_header, c->close_flag, NULL, 0);
+		sprintf(data, "%s",
+				  "<html><body><form method =\"POST\" action=\"http://192.168.1.141:8000/default\">"
+				  "<table border=\"5\" align=\"ceter\">"
+				  "<tr><td colspan=\"2\" align=\"center\" height=\"40\">LOG IN </td></tr>"
+					"<tr><td align=\"right\">USER:</td>"
+					"<td><input type=\"text\" name=\"userName\" value=\"\"/></td></tr>"
+					"<tr><td align=\"right\">PWD:</td>"
+					"<td><input type=\"password\" name=\"userPwd\" value=\"\"/></td></tr>"
+					"</table>"
+					"<input type=\"submit\" name=\"button\" id=\"button\" value=\"submit\"/></br> </body></html>");
 
-		
+		lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data, strlen(data));
 	}
 	else {
 		return HTTP_BAD_REQUEST;
@@ -71,58 +77,18 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
 {
     struct http_message *hm = p;
 	char data_getregister[1024] = {0};			
-	//char data_noregister[1024] = {0};
-	char extra_header[1024] = {0};
-	int i = 0;
-
-    if (hm && ev == LWS_EV_HTTP_REQUEST) {
-        if (c->send == NULL) {
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-
-		for (i = 0; i < (int) ARRAY_SIZE(hm->header_names) - 1; i++){
-			
-			if(hm->header_names[i].p != NULL){
-				if (!strncasecmp(hm->header_names[i].p, "Authorization", hm->header_names[i].len)){
-					sprintf(data_getregister, "%s",
-											"<html><body><h>Enjoy your webserver!</h>"
-											"<hr style=\"width:160px;color:#00ffff;position:absolute;left:10px;\"><br/><br/>"
-											"<ul style=\"list-style-type:circle\">"
-											"<li><a href=\"/default\"> echo root diretory </a></li>"
-											"<li><a href=\"/hello\"> echo hello message </a></li>"
-											"<li><a href=\"/version\"> echo lws version </a></li>"
-											"<li><a href=\"/download\"> downlad file </a></li>"
-											"</ul>"
-											"</body></html>");
-					lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_getregister, strlen(data_getregister));
-					return HTTP_OK;
-				}
-				//lws_log(4, "%.*s\n",hm->header_names[i].len, hm->header_names[i].p );
-	        }
-		}
-			sprintf(extra_header, "%s",
-					"WWW-Authenticate:Basic realm=\"your name and password\""); 	
-			lws_http_respond_base(c, 401, LWS_HTTP_HTML_TYPE, extra_header, c->close_flag, NULL, 0);		
-    } 
-	else {
-        return HTTP_BAD_REQUEST;
-    }
-
-    return HTTP_OK;
-}
-
-/*
-int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
-{
-    struct http_message *hm = p;
-	char data_getregister[1024] = {0};			
 	char data_noregister[1024] = {0};
 
     if (hm && ev == LWS_EV_HTTP_REQUEST) {
         if (c->send == NULL) {
             return HTTP_INTERNAL_SERVER_ERROR;
         }
-
+	sprintf(data_getregister, "%s",
+			"WWW-Authenticate:Basic realm=\"rest api\",OAuth realm=\"rest api\",Bearer realm=\"rest api\"");
+			
+	lws_http_respond_base(c, 401, LWS_HTTP_HTML_TYPE, data_getregister, c->close_flag, data_noregister,strlen(data_noregister));	
+	/*veidict if have the right username and password*/
+	/*
 		lws_check_register(hm, data_noregister);
 		sprintf(data_getregister, "%s",
 						"<html><body><h>Enjoy your webserver!</h>"
@@ -140,7 +106,7 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
 		else{
 			lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
 		}
-		
+		*/
     } 
 	else {
         return HTTP_BAD_REQUEST;
@@ -148,7 +114,6 @@ int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
 
     return HTTP_OK;
 }
-*/
 
 /*
 int lws_default_handler(lws_http_conn_t *c, int ev, void *p)
@@ -188,24 +153,24 @@ int lws_hello_handler(lws_http_conn_t *c, int ev, void *p)
 {
     struct http_message *hm = p;
  	char data_getregister[1024] = {0};			
-	//char data_noregister[1024] = {0};
+	char data_noregister[1024] = {0};
 
     if (hm && ev == LWS_EV_HTTP_REQUEST) {
         if (c->send == NULL) {
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 		
-		//lws_check_register(hm, data_noregister);
+		lws_check_register(hm, data_noregister);
         sprintf(data_getregister, "%s",
                   "<html><body><h>Hello LWS!</h><br/><br/>"
                   "</body></html>");
 
-        //if(g_code_flag){
+        if(g_code_flag){
 			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_getregister, strlen(data_getregister));
-		//	}
-		//else{
-		//	lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
-		//}
+			}
+		else{
+			lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
+		}
     } else {
         return HTTP_BAD_REQUEST;
     }
@@ -217,7 +182,7 @@ int lws_version_handler(lws_http_conn_t *c, int ev, void *p)
 {
     struct http_message *hm = p;
 	char data_getregister[1024] = {0};			
-	//char data_noregister[1024] = {0};
+	char data_noregister[1024] = {0};
 
 
     if (hm && ev == LWS_EV_HTTP_REQUEST) {
@@ -228,12 +193,12 @@ int lws_version_handler(lws_http_conn_t *c, int ev, void *p)
         sprintf(data_getregister, "<html><body><h>LWS - version[%s]</h><br/><br/>"
                   "</body></html>", LWS_HTTP_VERSION);
 
-        //if(g_code_flag){
+        if(g_code_flag){
 			lws_http_respond(c, 200, c->close_flag, LWS_HTTP_HTML_TYPE, data_getregister, strlen(data_getregister));
-		//	}
-		//else{
-		//	lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
-		//}
+			}
+		else{
+			lws_http_respond(c, 401, c->close_flag, LWS_HTTP_HTML_TYPE, data_noregister, strlen(data_noregister));
+		}
     } else {
         return HTTP_BAD_REQUEST;
     }

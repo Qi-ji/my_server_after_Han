@@ -18,7 +18,7 @@
 #include "lws_http.h"
 #include "lws_http_plugin.h"
 
-#define AUTHORITATIVE_TIME 1
+#define AUTHORITATIVE_TIME 3
 #define REGISTED 1
 #define UNREGISTED 0
 extern int g_code_flag;
