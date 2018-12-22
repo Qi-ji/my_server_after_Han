@@ -9,7 +9,7 @@ CC := $(CROSS_COMPILE)gcc
 CFLAGS += -Wall -O2
 CFLAGS += -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 CFLAGS += -Itool -Ihttp -Iserver
-LDFLAGS += -lpthread
+LDFLAGS += -lpthread -lcrypto
 
 # source files
 SRCS += tool/lws_util.c

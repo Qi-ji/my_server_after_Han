@@ -95,7 +95,6 @@ struct http_message {
   int resp_code;
   struct lws_str resp_status_msg;
 
-
   /*
    * Query-string part of the URI. For example, for HTTP request
    *    GET /foo/bar?param1=val1&param2=val2
@@ -114,7 +113,7 @@ struct http_message {
   struct lws_str body; /* Zero-length for requests with no body */
   struct lws_str user;
   struct lws_str password;
-
+  struct lws_str button;
 };
 
 
@@ -150,8 +149,6 @@ extern int lws_http_respond_base(lws_http_conn_t *lws_http_conn, int http_code, 
 extern int lws_http_respond(lws_http_conn_t *lws_http_conn, int http_code, int close_flag, 
                      char *content_type, char *content, int content_length);
 extern int lws_http_respond_header(lws_http_conn_t *lws_http_conn, int http_code, int close_flag);
-extern int lws_get_http_authutication(struct http_message *hm);
-
 
 /**
  * http plugin interfaces

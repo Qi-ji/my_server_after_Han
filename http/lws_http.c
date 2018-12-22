@@ -4,8 +4,17 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#include<openssl/pem.h>
+#include<openssl/bio.h>
+#include<openssl/evp.h>
+
+
 #include "lws_log.h"
 #include "lws_http.h"
+
+#define USER "123456"
+#define PASSWORD "123456"
+
 
 typedef struct _lws_http_status_t {
     int http_code;
@@ -164,11 +173,11 @@ int lws_parse_http(const char *s, int n, struct http_message *hm, int is_req)
     s = lws_http_parse_headers(s, end, len, hm);
 	
 	/*now s = "userName=1111&userPwd=123123&button=submit"*/
-	s = lws_skip(s, end+hm->body.len, "=", &hm->user);
-	s = lws_skip(s, end+hm->body.len, "&", &hm->user);
+	//s = lws_skip(s, end+hm->body.len, "=", &hm->user);
+	//s = lws_skip(s, end+hm->body.len, "&", &hm->user);
 	
-	s = lws_skip(s, end+hm->body.len, "=", &hm->password);	
-	s = lws_skip(s, end+hm->body.len, "&", &hm->password);	
+	//s = lws_skip(s, end+hm->body.len, "=", &hm->password);	
+	//s = lws_skip(s, end+hm->body.len, "&", &hm->password);	
 
 	//lws_log(4,"user:%.*s passward:%.*s\n",hm->user.len, hm->user.p, hm->password.len, hm->password.p);
 	
@@ -197,6 +206,29 @@ int lws_parse_http(const char *s, int n, struct http_message *hm, int is_req)
     return len;
 }
 
+int lws_base64_decode(const char *in_str, int in_len, char *out_str)
+{
+    BIO *b64, *bio;
+    //BUF_MEM *bptr = NULL;
+    //int counts;
+    int size = 0;
+
+    if(in_str == NULL && out_str == NULL)
+        return -1;
+
+    b64 = BIO_new(BIO_f_base64());
+    BIO_set_flags(b64,BIO_FLAGS_BASE64_NO_NL);
+
+    bio = BIO_new_mem_buf(in_str, in_len);
+    bio = BIO_push(b64, bio);
+
+    size = BIO_read(bio, out_str, in_len);
+    out_str[size] = '\0';
+    
+    BIO_free_all(bio);
+    return size;
+}
+
 /**
  * http protocol interfaces
 **/
@@ -213,6 +245,44 @@ struct lws_str *lws_get_http_header(struct http_message *hm, const char *name)
     return NULL;
 }
 
+int lws_get_http_authentication(struct http_message *hm)
+{
+    char name[] = "Authorization";
+	struct lws_str *v = NULL;
+	char *p;
+	char encode_buf[1024] = {0};
+	char encode[1024] = {0};
+	char decode[256] = {0};
+	int size;
+	
+    v = lws_get_http_header(hm,name);
+	if(NULL == v)
+		return -1;
+	
+	strncpy(encode_buf, v->p, v->len);
+	p = (strchr(encode_buf, ' ') + 1);
+	strcpy(encode, p);
+
+	size = lws_base64_decode(encode, strlen(encode), decode);//decode:11:11
+	
+	p = lws_skip(decode, decode+size, ":", &hm->user);
+	p = lws_skip(p, p+size, "\0", &hm->password);
+
+	lws_log(4,"user:%.*s\n", hm->user.len, hm->user.p);
+	lws_log(4,"password:%.*s\n", hm->password.len, hm->password.p);
+
+	if(!strncmp(hm->user.p, USER, hm->user.len) && !strncmp(hm->password.p, PASSWORD, hm->password.len))
+		{
+		lws_log(4,"Match,allow login\n");
+		return 0;
+	}
+	else{
+		lws_log(4,"NOT Match,not allow login\n");
+		return -1;
+	}
+	
+	
+}
 static char *lws_get_http_status(int http_code)
 {
     int i;
@@ -226,21 +296,6 @@ static char *lws_get_http_status(int http_code)
     return "unknow";
 }
 
-/*int lws_http_authentication(struct lws_str body)
-{
-	char *s = body.p;
-	struct http_username *n;
-	s = lws_skip(s, body.len, "=", &n->user);
-	s = lws_skip(s, body.len, "=", &n->password);
-	s = lws_skip(s, body.len, "=", &n->button);
-	n->user.len = n->password.p - n->user.p - strlen("&userPwd");
-	n->password.len = 6;//(密码默认长度为6，应使用宏定义进行定义)
-
-	lws_log(4, "user:%.*s,password:%.*d\n", n->user.len, n->user.p, n->password.len, n->password.p);
-
-	return 0;
-}
-*/
 
 /**
  * http response interfaces
